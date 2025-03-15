@@ -315,7 +315,7 @@ namespace MookStoryScript
         /// <summary>
         /// 保存脚本变量
         /// </summary>
-        public Dictionary<string, object> SaveVariables()
+        public Dictionary<string, object> GetVariables()
         {
             // 只保存非内置变量（即故事脚本中设置的变量）
             return _variables;

@@ -53,6 +53,7 @@ namespace MookStoryScript
         public event Action? OnDialogueStarted;
         public event Action<DialogueNode>? OnNodeStarted;
         public event Action<DialogueBlock>? OnDialogueUpdated;
+        public event Action<CommandType>? OnCommandExecuted;
         public event Action<int>? OnOptionSelected;
         public event Action? OnDialogueCompleted;
         // 本地化事件
@@ -101,9 +102,20 @@ namespace MookStoryScript
         /// <summary>
         /// 加载对话进度
         /// </summary>
-        public void LoadProgress(DialogueProgress dialogueProgress)
+        public void LoadProgress(DialogueProgress dialogueProgress, Dictionary<string, object> variables)
         {
             DialogueProgresses = dialogueProgress;
+            VariableManagers.LoadVariables(variables);
+        }
+
+        public DialogueProgress GetProgress()
+        {
+            return DialogueProgresses;
+        }
+
+        public Dictionary<string, object> GetVariables()
+        {
+            return VariableManagers.GetVariables();
         }
 
         /// <summary>
@@ -631,7 +643,7 @@ namespace MookStoryScript
             if (!string.IsNullOrEmpty(CurrentBlock.NextNodeName))
             {
                 var nextNode = DialogueLoaders.GetDialogueNode(CurrentBlock.NextNodeName);
-                if (nextNode != null && nextNode.Blocks.Count > 0)
+                if (nextNode is { Blocks: { Count: > 0 } })
                 {
                     // 检查下一个节点的第一个块是否有符合条件的
                     var firstBlock = nextNode.Blocks[0];
@@ -688,7 +700,7 @@ namespace MookStoryScript
                     }
 
                     // 如果直接返回的节点没有可执行块，且它也是内部节点，则需要检查整个返回栈
-                    if (returnNode != null && returnNode.IsInternal)
+                    if (returnNode is { IsInternal: true })
                     {
                         // 复制返回栈以便遍历
                         var stackCopy = DialogueProgresses.GetReturnPointStack();
@@ -801,13 +813,14 @@ namespace MookStoryScript
                             // 检查变量是否已存在
                             if (VariableManagers.Get<object>(varName) != null)
                             {
-                                await Console.Error.WriteLineAsync($"Variable {varName} already exists");
                                 return;
                             }
 
                             // 计算初始值并声明变量
                             var value = ExpressionManagers.Evaluate(varValue);
                             if (value != null) VariableManagers.Set(varName, value);
+                            // 触发事件
+                            OnCommandExecuted?.Invoke(command.CommandType);
                             break;
                         }
                     case CommandType.Set:
@@ -821,30 +834,38 @@ namespace MookStoryScript
                             }
 
                             string varName = setMatch.Groups[1].Value;
-                            string expression = setMatch.Groups[2].Value;
-
-                            // 检查变量是否存在
-                            if (VariableManagers.Get<object>(varName) == null)
-                            {
-                                await Console.Error.WriteLineAsync($"Variable {varName} not declared");
-                                return;
-                            }
+                            string setExpression = setMatch.Groups[2].Value;
 
                             // 计算表达式并设置变量值
-                            object? value = ExpressionManagers.Evaluate(expression);
-                            if (value != null) VariableManagers.Set(varName, value);
+                            object? value = ExpressionManagers.Evaluate(setExpression);
+                            if (value != null)
+                            {
+                                VariableManagers.Set(varName, value);
+                                // 触发事件
+                                OnCommandExecuted?.Invoke(command.CommandType);
+                            }
                             break;
                         }
                     case CommandType.Add:
                     case CommandType.Sub:
                         var opMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
-                        if (opMatch.Success)
+                        if (!opMatch.Success)
                         {
-                            string variableName = opMatch.Groups[1].Value;
-                            string expression = opMatch.Groups[2].Value;
-                            object? result = ExpressionManagers.Evaluate(expression);
-                            // 使用 VariableManagers 设置变量
-                            if (result != null) VariableManagers.Set(variableName, result);
+                            await Console.Error.WriteLineAsync($"Invalid assignment statement: {command.CsExpression}");
+                            return;
+                        }
+
+                        string variableName = opMatch.Groups[1].Value;
+                        string expression = opMatch.Groups[2].Value;
+
+                        // 计算表达式
+                        object? result = ExpressionManagers.Evaluate(expression);
+                        // 使用 VariableManagers 设置变量
+                        if (result != null)
+                        {
+                            VariableManagers.Set(variableName, result);
+                            // 触发事件
+                            OnCommandExecuted?.Invoke(command.CommandType);
                         }
                         break;
 
@@ -853,6 +874,8 @@ namespace MookStoryScript
                         float waitTime = float.Parse(waitResult!.ToString()!);
                         if (waitTime > 0)
                         {
+                            // 触发事件
+                            OnCommandExecuted?.Invoke(command.CommandType);
                             await Task.Delay(TimeSpan.FromSeconds(waitTime));
                         }
                         else
@@ -864,6 +887,8 @@ namespace MookStoryScript
                     case CommandType.Call:
                         // 函数调用，直接执行表达式
                         ExpressionManagers.Evaluate(command.CsExpression);
+                        // 触发事件
+                        OnCommandExecuted?.Invoke(command.CommandType);
                         break;
 
                     default:
