@@ -1,3 +1,4 @@
+using DefaultNamespace;
 using MookStoryScript;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ public class DialogueMgr : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        StoryScript.Logger.SetLogger(new UnityLogger());
         Initialize();
     }
     

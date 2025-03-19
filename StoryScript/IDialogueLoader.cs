@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using StoryScript;
 
 namespace MookStoryScript
 {
@@ -25,7 +26,7 @@ namespace MookStoryScript
 
         public DefaultDialogueLoader(string rootDir)
         {
-            Console.WriteLine("Initializing DefaultDialogueLoader...");
+            Logger.Log("Initializing DefaultDialogueLoader...");
             StoryScriptParsers = new StoryScriptParser();
             DialogueNodes = new Dictionary<string, DialogueNode>();
 
@@ -62,7 +63,7 @@ namespace MookStoryScript
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"[{sourceName}] Failed to parse story script\n{ex.Message}");
+                Logger.LogError($"[{sourceName}] Failed to parse story script\n{ex.Message}");
             }
         }
 

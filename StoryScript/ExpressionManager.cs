@@ -1,5 +1,6 @@
 ﻿using System;
 using DynamicExpresso;
+using StoryScript;
 
 namespace MookStoryScript
 {
@@ -10,7 +11,7 @@ namespace MookStoryScript
 
         public ExpressionManager()
         {
-            Console.WriteLine("Initializing ExpressionManager...");
+            Logger.Log("Initializing ExpressionManager...");
         }
 
         /// <summary>
@@ -53,7 +54,7 @@ namespace MookStoryScript
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Expression parsing error: {expression}\n{ex.Message}");
+                Logger.LogError($"Expression parsing error: {expression}\n{ex.Message}");
                 return null;
             }
         }
@@ -72,7 +73,7 @@ namespace MookStoryScript
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Expression parsing error: {expression}\n{ex.Message}");
+                Logger.LogError($"Expression parsing error: {expression}\n{ex.Message}");
                 return default(T?);
             }
         }
@@ -96,7 +97,7 @@ namespace MookStoryScript
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Condition expression calculation error: {condition}\n{ex.Message}");
+                Logger.LogError($"Condition expression calculation error: {condition}\n{ex.Message}");
                 return false; // 出错时返回 false
             }
         }

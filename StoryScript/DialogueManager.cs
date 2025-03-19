@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using StoryScript;
 
 namespace MookStoryScript
 {
@@ -70,7 +72,7 @@ namespace MookStoryScript
 
         public DialogueManager(IDialogueLoader dialogueLoader)
         {
-            Console.WriteLine("Initializing DialogueManager...");
+            Logger.Log("Initializing DialogueManager...");
             DialogueLoaders = dialogueLoader;
             ExpressionManagers = new ExpressionManager();
             VariableManagers = new VariableManager(ExpressionManagers);
@@ -188,7 +190,7 @@ namespace MookStoryScript
         {
             if (IsExecuting && !force)
             {
-                Console.WriteLine("Executing command, please wait...");
+                Logger.Log("Executing command, please wait...");
                 return;
             }
 
@@ -207,7 +209,7 @@ namespace MookStoryScript
             if (force && IsExecuting)
             {
                 IsExecuting = false;
-                Console.WriteLine("Force end dialogue and interrupt command execution");
+                Logger.Log("Force end dialogue and interrupt command execution");
             }
 
             OnDialogueCompleted?.Invoke();
@@ -222,7 +224,7 @@ namespace MookStoryScript
         {
             if (IsExecuting)
             {
-                Console.WriteLine("Executing command, please wait...");
+                Logger.Log("Executing command, please wait...");
                 return;
             }
 
@@ -233,7 +235,7 @@ namespace MookStoryScript
                 // 使用当前节点
                 if (CurrentNode == null)
                 {
-                    await Console.Error.WriteLineAsync("No active dialogue node");
+                    Logger.Log("No active dialogue node");
                     if (!string.IsNullOrEmpty(CurrentSectionId))
                     {
                         EndSay();
@@ -247,7 +249,7 @@ namespace MookStoryScript
                 // 使用指定节点
                 if (string.IsNullOrEmpty(nodeName))
                 {
-                    Console.WriteLine("Dialogue node name cannot be empty");
+                    Logger.Log("Dialogue node name cannot be empty");
                     if (!string.IsNullOrEmpty(CurrentSectionId))
                     {
                         EndSay();
@@ -258,7 +260,7 @@ namespace MookStoryScript
                 targetNode = DialogueLoaders.GetDialogueNode(nodeName);
                 if (targetNode == null)
                 {
-                    await Console.Error.WriteLineAsync($"Dialogue node not found: {nodeName}");
+                    Logger.Log($"Dialogue node not found: {nodeName}");
                     if (!string.IsNullOrEmpty(CurrentSectionId))
                     {
                         EndSay();
@@ -270,7 +272,7 @@ namespace MookStoryScript
             // 验证节点的完整性
             if (targetNode.Blocks.Count == 0)
             {
-                await Console.Error.WriteLineAsync($"Dialogue node {nodeName ?? CurrentNodeName} does not contain valid content");
+                Logger.Log($"Dialogue node {nodeName ?? CurrentNodeName} does not contain valid content");
                 if (!string.IsNullOrEmpty(CurrentSectionId))
                 {
                     EndSay();
@@ -281,7 +283,7 @@ namespace MookStoryScript
             // 验证块索引的有效性
             if (blockIndex < 0 || blockIndex >= targetNode.Blocks.Count)
             {
-                await Console.Error.WriteLineAsync($"Invalid block index: {blockIndex}, node {nodeName ?? CurrentNodeName} has {targetNode.Blocks.Count} blocks");
+                Logger.Log($"Invalid block index: {blockIndex}, node {nodeName ?? CurrentNodeName} has {targetNode.Blocks.Count} blocks");
                 if (!string.IsNullOrEmpty(CurrentSectionId))
                 {
                     EndSay();
@@ -318,7 +320,7 @@ namespace MookStoryScript
         {
             if (IsExecuting)
             {
-                Console.WriteLine("Executing command, please wait...");
+                Logger.Log("Executing command, please wait...");
                 return;
             }
 
@@ -328,6 +330,13 @@ namespace MookStoryScript
                 {
                     EndSay();
                 }
+                return;
+            }
+
+            // 如果当前块有选项，提示用户选择
+            if (CurrentBlock?.Options.Count > 0)
+            {
+                Logger.Log("Please select an option!");
                 return;
             }
 
@@ -343,13 +352,6 @@ namespace MookStoryScript
                 CurrentBlockIndex >= CurrentNode.Blocks.Count - 1)
             {
                 await ReturnToOriginalNode();
-                return;
-            }
-
-            // 如果当前块有选项，提示用户选择
-            if (CurrentBlock?.Options.Count > 0)
-            {
-                Console.WriteLine("Please select an option!");
                 return;
             }
 
@@ -386,7 +388,7 @@ namespace MookStoryScript
             }
             else
             {
-                await Console.Error.WriteLineAsync($"Next dialogue node not found: {nextNodeName}");
+                Logger.Log($"Next dialogue node not found: {nextNodeName}");
                 EndSay();
             }
         }
@@ -459,7 +461,7 @@ namespace MookStoryScript
                 }
                 catch (Exception ex)
                 {
-                    await Console.Error.WriteLineAsync($"Condition calculation error: {CurrentBlock.Condition}\n{ex.Message}");
+                    Logger.Log($"Condition calculation error: {CurrentBlock.Condition}\n{ex.Message}");
                 }
             }
 
@@ -487,7 +489,7 @@ namespace MookStoryScript
             }
             catch (Exception ex)
             {
-                await Console.Error.WriteLineAsync($"Error executing command: {ex.Message}");
+                Logger.Log($"Error executing command: {ex.Message}");
             }
 
             // 记录当前对话块到对话进度
@@ -527,7 +529,7 @@ namespace MookStoryScript
                     {
                         // 如果栈信息不匹配，从头开始
                         CurrentBlockIndex = 0;
-                        await Console.Error.WriteLineAsync($"Return stack information does not match: expected {returnNodeName}, actual {returnPoint.NodeName}");
+                        Logger.Log($"Return stack information does not match: expected {returnNodeName}, actual {returnPoint.NodeName}");
                     }
                 }
                 else
@@ -552,7 +554,7 @@ namespace MookStoryScript
         {
             if (IsExecuting)
             {
-                Console.WriteLine("Executing command, please wait...");
+                Logger.Log("Executing command, please wait...");
                 return;
             }
 
@@ -579,13 +581,13 @@ namespace MookStoryScript
                     // 如果条件不满足，返回 null
                     if (!ExpressionManagers.EvaluateCondition(option.Condition))
                     {
-                        await Console.Error.WriteLineAsync($"Option condition not met: {option.Text} [if {option.Condition}]");
+                        Logger.Log($"Option condition not met: {option.Text} [if {option.Condition}]");
                         return;
                     }
                 }
                 catch (Exception ex)
                 {
-                    await Console.Error.WriteLineAsync($"Option condition calculation error: {ex.Message}");
+                    Logger.Log($"Option condition calculation error: {ex.Message}");
                     return;
                 }
             }
@@ -605,7 +607,7 @@ namespace MookStoryScript
                 }
                 catch (Exception ex)
                 {
-                    await Console.Error.WriteLineAsync($"Error executing option command: {ex.Message}");
+                    Logger.Log($"Error executing option command: {ex.Message}");
                 }
             }
 
@@ -643,7 +645,7 @@ namespace MookStoryScript
             if (!string.IsNullOrEmpty(CurrentBlock.NextNodeName))
             {
                 var nextNode = DialogueLoaders.GetDialogueNode(CurrentBlock.NextNodeName);
-                if (nextNode is { Blocks: { Count: > 0 } })
+                if (nextNode is {Blocks: {Count: > 0}})
                 {
                     // 检查下一个节点的第一个块是否有符合条件的
                     var firstBlock = nextNode.Blocks[0];
@@ -700,7 +702,7 @@ namespace MookStoryScript
                     }
 
                     // 如果直接返回的节点没有可执行块，且它也是内部节点，则需要检查整个返回栈
-                    if (returnNode is { IsInternal: true })
+                    if (returnNode is {IsInternal: true})
                     {
                         // 复制返回栈以便遍历
                         var stackCopy = DialogueProgresses.GetReturnPointStack();
@@ -798,60 +800,60 @@ namespace MookStoryScript
                 switch (command.CommandType)
                 {
                     case CommandType.Var:
+                    {
+                        // 解析变量声明
+                        var varMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
+                        if (!varMatch.Success)
                         {
-                            // 解析变量声明
-                            var varMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
-                            if (!varMatch.Success)
-                            {
-                                await Console.Error.WriteLineAsync($"Invalid variable declaration: {command.CsExpression}");
-                                return;
-                            }
+                            Logger.Log($"Invalid variable declaration: {command.CsExpression}");
+                            return;
+                        }
 
-                            string varName = varMatch.Groups[1].Value;
-                            string varValue = varMatch.Groups[2].Value;
+                        string varName = varMatch.Groups[1].Value;
+                        string varValue = varMatch.Groups[2].Value;
 
-                            // 检查变量是否已存在
-                            if (VariableManagers.Get<object>(varName) != null)
-                            {
-                                return;
-                            }
+                        // 检查变量是否已存在
+                        if (VariableManagers.Get<object>(varName) != null)
+                        {
+                            return;
+                        }
 
-                            // 计算初始值并声明变量
-                            var value = ExpressionManagers.Evaluate(varValue);
-                            if (value != null) VariableManagers.Set(varName, value);
+                        // 计算初始值并声明变量
+                        var value = ExpressionManagers.Evaluate(varValue);
+                        if (value != null) VariableManagers.Set(varName, value);
+                        // 触发事件
+                        OnCommandExecuted?.Invoke(command.CommandType);
+                        break;
+                    }
+                    case CommandType.Set:
+                    {
+                        // 解析赋值语句
+                        var setMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
+                        if (!setMatch.Success)
+                        {
+                            Logger.Log($"Invalid assignment statement: {command.CsExpression}");
+                            return;
+                        }
+
+                        string varName = setMatch.Groups[1].Value;
+                        string setExpression = setMatch.Groups[2].Value;
+
+                        // 计算表达式并设置变量值
+                        object? value = ExpressionManagers.Evaluate(setExpression);
+                        if (value != null)
+                        {
+                            VariableManagers.Set(varName, value);
                             // 触发事件
                             OnCommandExecuted?.Invoke(command.CommandType);
-                            break;
                         }
-                    case CommandType.Set:
-                        {
-                            // 解析赋值语句
-                            var setMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
-                            if (!setMatch.Success)
-                            {
-                                await Console.Error.WriteLineAsync($"Invalid assignment statement: {command.CsExpression}");
-                                return;
-                            }
-
-                            string varName = setMatch.Groups[1].Value;
-                            string setExpression = setMatch.Groups[2].Value;
-
-                            // 计算表达式并设置变量值
-                            object? value = ExpressionManagers.Evaluate(setExpression);
-                            if (value != null)
-                            {
-                                VariableManagers.Set(varName, value);
-                                // 触发事件
-                                OnCommandExecuted?.Invoke(command.CommandType);
-                            }
-                            break;
-                        }
+                        break;
+                    }
                     case CommandType.Add:
                     case CommandType.Sub:
                         var opMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
                         if (!opMatch.Success)
                         {
-                            await Console.Error.WriteLineAsync($"Invalid assignment statement: {command.CsExpression}");
+                            Logger.Log($"Invalid assignment statement: {command.CsExpression}");
                             return;
                         }
 
@@ -880,7 +882,7 @@ namespace MookStoryScript
                         }
                         else
                         {
-                            await Console.Error.WriteLineAsync($"Wait time must be a numeric type: {command.CsExpression}");
+                            Logger.Log($"Wait time must be a numeric type: {command.CsExpression}");
                         }
                         break;
 
@@ -892,13 +894,13 @@ namespace MookStoryScript
                         break;
 
                     default:
-                        await Console.Error.WriteLineAsync($"Unknown command type: {command.CommandType}");
+                        Logger.Log($"Unknown command type: {command.CommandType}");
                         break;
                 }
             }
             catch (Exception ex)
             {
-                await Console.Error.WriteLineAsync($"Error executing command: {command.CsExpression}\n{ex.Message}");
+                Logger.Log($"Error executing command: {command.CsExpression}\n{ex.Message}");
             }
         }
 
@@ -950,7 +952,7 @@ namespace MookStoryScript
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"Failed to process interpolation expression: {expression}\n{ex.Message}");
+                    Logger.LogError($"Failed to process interpolation expression: {expression}\n{ex.Message}");
                     return $"[Error: {expression}]";
                 }
             });

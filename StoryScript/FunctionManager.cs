@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using StoryScript;
 
 namespace MookStoryScript
 {
@@ -33,7 +34,7 @@ namespace MookStoryScript
 
         public FunctionManager(ExpressionManager expressionManager, DialogueManager dialogueManager)
         {
-            Console.WriteLine("Initializing FunctionManager...");
+            Logger.Log("Initializing FunctionManager...");
             _functions = new Dictionary<string, Delegate>();
             _expressionManager = expressionManager;
             _dialogueManager = dialogueManager;
@@ -90,19 +91,19 @@ namespace MookStoryScript
                             }
                             catch (Exception ex)
                             {
-                                Console.Error.WriteLine($"Error registering functions from type {type.FullName}: {ex.Message}");
+                                Logger.LogError($"Error registering functions from type {type.FullName}: {ex.Message}");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.Error.WriteLine($"Error scanning assembly {assembly.FullName}: {ex.Message}");
+                        Logger.LogError($"Error scanning assembly {assembly.FullName}: {ex.Message}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error registering functions: {ex.Message}");
+                Logger.LogError($"Error registering functions: {ex.Message}");
             }
         }
 
@@ -179,7 +180,7 @@ namespace MookStoryScript
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"Error registering function {method.Name}: {ex.Message}");
+                    Logger.LogError($"Error registering function {method.Name}: {ex.Message}");
                 }
             }
         }
@@ -191,7 +192,7 @@ namespace MookStoryScript
         {
             if (string.IsNullOrEmpty(objectName))
             {
-                Console.Error.WriteLine("Object name cannot be empty");
+                Logger.LogError("Object name cannot be empty");
                 return;
             }
 
@@ -237,7 +238,7 @@ namespace MookStoryScript
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"Error registering method {method.Name}: {ex.Message}");
+                    Logger.LogError($"Error registering method {method.Name}: {ex.Message}");
                 }
             }
 
@@ -324,7 +325,7 @@ namespace MookStoryScript
         [ScriptFunc("log")]
         public static void CsLog(object message)
         {
-            Console.WriteLine(message);
+            Logger.Log(message);
         }
 
         /// <summary>
@@ -359,13 +360,13 @@ namespace MookStoryScript
         {
             if (string.IsNullOrEmpty(nodeName))
             {
-                Console.Error.WriteLine("Node name cannot be empty");
+                Logger.LogError("Node name cannot be empty");
                 return 0;
             }
 
             if (!_dialogueManager.DialogueLoaders.DialogueNodes.ContainsKey(nodeName))
             {
-                Console.Error.WriteLine($"Node not found: {nodeName}");
+                Logger.LogError($"Node not found: {nodeName}");
                 return 0;
             }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Text;
+using StoryScript;
 
 namespace MookStoryScript
 {
@@ -22,7 +23,7 @@ namespace MookStoryScript
 
         public StoryScriptParser()
         {
-            Console.WriteLine("Initializing StoryScriptParser...");
+            Logger.Log("Initializing StoryScriptParser...");
             _storyScriptException = new StoryScriptException();
             _nodes = new Dictionary<string, DialogueNode>();
             _currentLineNumber = 0;
@@ -457,7 +458,7 @@ namespace MookStoryScript
                     }
                     var newLayer = new ConditionLayer();
                     newLayer.Conditions.Add(PreprocessExpression(result.Condition.ToString(), true));
-                    newLayer.ConditionLevel = _parsingContext.CurrentIndentLevel + 1; // 记录条件层级为当前层级+1
+                    newLayer.ConditionLevel = _parsingContext.CurrentIndentLevel; // 记录条件层级为当前层级
                     _conditionLayers.Push(newLayer);
                     break;
 
@@ -1336,9 +1337,9 @@ namespace MookStoryScript
             {
                 if (layer.Conditions.Count == 0) continue;
 
-                // 检查当前缩进级别是否大于条件层级
-                // 如果是，则该条件对当前元素无效
-                if (currentIndentLevel > layer.ConditionLevel)
+                // 检查当前缩进级别是否小于条件层级
+                // 如果是，则该条件对当前元素无效（已经退出了条件块的范围）
+                if (currentIndentLevel < layer.ConditionLevel)
                 {
                     continue;
                 }

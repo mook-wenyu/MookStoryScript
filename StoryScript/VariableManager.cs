@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using Newtonsoft.Json;
+using StoryScript;
 
 namespace MookStoryScript
 {
@@ -40,7 +41,7 @@ namespace MookStoryScript
         /// </summary>
         public VariableManager(ExpressionManager expressionManager)
         {
-            Console.WriteLine("Initializing VariableManager...");
+            Logger.Log("Initializing VariableManager...");
             _builtinVariables = new Dictionary<string, (Func<object> getter, Action<object> setter)>();
             _variables = new Dictionary<string, object>();
             _expressionManager = expressionManager;
@@ -86,7 +87,7 @@ namespace MookStoryScript
                 {
                     try
                     {
-                        Console.WriteLine($"Scanning assembly variables: {assembly.FullName}");
+                        Logger.Log($"Scanning assembly variables: {assembly.FullName}");
 
                         // 获取程序集中的所有类型
                         var types = assembly.GetTypes();
@@ -98,19 +99,19 @@ namespace MookStoryScript
                             }
                             catch (Exception ex)
                             {
-                                Console.Error.WriteLine($"Error registering variables from type {type.FullName}: {ex.Message}");
+                                Logger.LogError($"Error registering variables from type {type.FullName}: {ex.Message}");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.Error.WriteLine($"Error scanning assembly {assembly.FullName}: {ex.Message}");
+                        Logger.LogError($"Error scanning assembly {assembly.FullName}: {ex.Message}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error registering variables: {ex.Message}");
+                Logger.LogError($"Error registering variables: {ex.Message}");
             }
         }
 
@@ -154,7 +155,7 @@ namespace MookStoryScript
                         Action<object> setter = (value) => property.SetValue(null, value);
 
                         RegisterBuiltinVariable(attr.Name, getter, setter);
-                        Console.WriteLine($"Registered static variable: {attr.Name} [{type.FullName}.{property.Name}]");
+                        Logger.Log($"Registered static variable: {attr.Name} [{type.FullName}.{property.Name}]");
                     }
                     else
                     {
@@ -170,12 +171,12 @@ namespace MookStoryScript
                         Action<object> setter = (value) => property.SetValue(targetInstance, value);
 
                         RegisterBuiltinVariable(attr.Name, getter, setter);
-                        Console.WriteLine($"Registered instance variable: {attr.Name} [{type.FullName}.{property.Name}]");
+                        Logger.Log($"Registered instance variable: {attr.Name} [{type.FullName}.{property.Name}]");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"Error registering variable {property.Name}: {ex.Message}");
+                    Logger.LogError($"Error registering variable {property.Name}: {ex.Message}");
                 }
             }
 
@@ -197,7 +198,7 @@ namespace MookStoryScript
                         Action<object> setter = (value) => field.SetValue(null, value);
 
                         RegisterBuiltinVariable(attr.Name, getter, setter);
-                        Console.WriteLine($"Registered static field: {attr.Name} [{type.FullName}.{field.Name}]");
+                        Logger.Log($"Registered static field: {attr.Name} [{type.FullName}.{field.Name}]");
                     }
                     else
                     {
@@ -213,12 +214,12 @@ namespace MookStoryScript
                         Action<object> setter = (value) => field.SetValue(targetInstance, value);
 
                         RegisterBuiltinVariable(attr.Name, getter, setter);
-                        Console.WriteLine($"Registered instance field: {attr.Name} [{type.FullName}.{field.Name}]");
+                        Logger.Log($"Registered instance field: {attr.Name} [{type.FullName}.{field.Name}]");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine($"Error registering field {field.Name}: {ex.Message}");
+                    Logger.LogError($"Error registering field {field.Name}: {ex.Message}");
                 }
             }
         }
@@ -230,7 +231,7 @@ namespace MookStoryScript
         {
             if (string.IsNullOrEmpty(objectName))
             {
-                Console.Error.WriteLine("Object name cannot be empty");
+                Logger.LogError("Object name cannot be empty");
                 return;
             }
 
@@ -252,7 +253,7 @@ namespace MookStoryScript
 
                 // 注册到变量管理器
                 RegisterBuiltinVariable(varName, getter, setter);
-                Console.WriteLine($"Registered object property: {varName}");
+                Logger.Log($"Registered object property: {varName}");
             }
 
             // 注册所有字段
@@ -267,13 +268,13 @@ namespace MookStoryScript
 
                 // 注册到变量管理器
                 RegisterBuiltinVariable(varName, getter, setter);
-                Console.WriteLine($"Registered object field: {varName}");
+                Logger.Log($"Registered object field: {varName}");
             }
 
             // 查找并注册标记了特性的成员
             RegisterVariablesFromType(type, instance);
 
-            Console.WriteLine($"Registered object: {objectName} [{type.FullName}]");
+            Logger.Log($"Registered object: {objectName} [{type.FullName}]");
         }
 
         /// <summary>
@@ -296,7 +297,7 @@ namespace MookStoryScript
             name = name.ToLower();
             if (string.IsNullOrEmpty(name))
             {
-                Console.Error.WriteLine("Variable name cannot be empty");
+                Logger.LogError("Variable name cannot be empty");
                 return;
             }
 
@@ -361,7 +362,7 @@ namespace MookStoryScript
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Failed to set variable {name}: {ex.Message}");
+                Logger.LogError($"Failed to set variable {name}: {ex.Message}");
             }
         }
 
@@ -389,7 +390,7 @@ namespace MookStoryScript
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Failed to get variable {name}: {ex.Message}");
+                Logger.LogError($"Failed to get variable {name}: {ex.Message}");
                 return defaultValue;
             }
         }

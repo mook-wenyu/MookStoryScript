@@ -1,58 +1,93 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using MookStoryScript;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class NormalDialogueUI : MonoBehaviour
+public class ListDialogueUI : MonoBehaviour
 {
-    public GameObject normalDialogue;
-    public Text speakerText;
-    public Text contentText;
-
+    public GameObject dialogueUI;
+    
+    public ScrollRect dialogueContainer;
+    public GameObject dialoguePrefab;
+    
     public Transform optionContainer;
     public Button optionPrefab;
-
+    
     public GameObject btnRoot;
     public InputField inputField;
+    public Button lDialogueBtn;
 
     private Button _clickHandler;
-
+    
     // Start is called before the first frame update
     void Start()
     {
         // 初始化点击处理
-        _clickHandler = normalDialogue.GetComponent<Button>();
+        /*
+        _clickHandler = dialogueUI.GetComponent<Button>();
         if (_clickHandler == null)
         {
-            _clickHandler = normalDialogue.AddComponent<Button>();
+            _clickHandler = dialogueUI.AddComponent<Button>();
         }
         _clickHandler.onClick.AddListener(DialogueMgr.Instance.DialogueMgrs.ContinueSay);
+        */
 
         DialogueMgr.Instance.DialogueMgrs.OnDialogueStarted += OnDialogueStarted;
         DialogueMgr.Instance.DialogueMgrs.OnDialogueUpdated += OnDialogueUpdated;
         DialogueMgr.Instance.DialogueMgrs.OnOptionSelected += OnOptionSelected;
         DialogueMgr.Instance.DialogueMgrs.OnDialogueCompleted += OnDialogueCompleted;
+        
+        lDialogueBtn.onClick.AddListener(OnListClickDialogue);
+        
+        dialogueUI.SetActive(false);
     }
 
     private void OnDialogueStarted()
     {
         Debug.Log("对话开始");
-        normalDialogue.SetActive(true);
+        
     }
 
     private void OnDialogueUpdated(DialogueBlock block)
     {
-        speakerText.text = !string.IsNullOrEmpty(block.Speaker) ? block.Speaker : "";
-        contentText.text = block.Text;
-        
+        if (!string.IsNullOrEmpty(block.Text))
+        {
+            var go = Instantiate(dialoguePrefab, dialogueContainer.content);
+            Text contentText = go.GetComponent<Text>();
+                
+            StringBuilder sb = new StringBuilder();
+            if (!string.IsNullOrEmpty(block.Speaker))
+            {
+                sb.Append(block.Speaker);
+                sb.Append(" - ");
+            }
+            sb.Append(block.Text);
+            contentText.text = sb.ToString();
+            
+            LayoutRebuilder.ForceRebuildLayoutImmediate(contentText.GetComponent<RectTransform>());
+            LayoutRebuilder.ForceRebuildLayoutImmediate(dialogueContainer.content.GetComponent<RectTransform>());
+            
+            Canvas.ForceUpdateCanvases();
+            dialogueContainer.verticalNormalizedPosition = 0f;
+        }
+
         for (int i = 0; i < optionContainer.childCount; i++)
         {
             Destroy(optionContainer.GetChild(i).gameObject);
         }
 
-        if (block.Options.Count <= 0) return;
+        if (block.Options.Count <= 0)
+        {
+            var go = Instantiate(optionPrefab, optionContainer);
+            go.GetComponentInChildren<Text>().text = "继续";
+            go.onClick.AddListener(() =>
+            {
+                DialogueMgr.Instance.DialogueMgrs.ContinueSay();
+            });
+            return;
+        }
         foreach (var option in block.Options)
         {
             var go = Instantiate(optionPrefab, optionContainer);
@@ -72,13 +107,20 @@ public class NormalDialogueUI : MonoBehaviour
     private void OnDialogueCompleted()
     {
         Debug.Log("对话结束");
-        normalDialogue.SetActive(false);
+        dialogueUI.SetActive(false);
         btnRoot.SetActive(true);
     }
 
-    public void OnNormalClickDialogue()
+    public void OnListClickDialogue()
     {
         btnRoot.SetActive(false);
+        dialogueUI.SetActive(true);
+        
+        for (int i = 0; i < dialogueContainer.content.childCount; i++)
+        {
+            Destroy(dialogueContainer.content.GetChild(i).gameObject);
+        }
+        
         DialogueMgr.Instance.DialogueMgrs.Say(inputField.text.Trim());
     }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using StoryScript;
 
 namespace MookStoryScript
 {
@@ -116,7 +117,7 @@ namespace MookStoryScript
                 default:
                     throw new ArgumentOutOfRangeException(nameof(severity), severity, null);
             }
-            Console.WriteLine(logMessage);
+            Logger.Log(logMessage);
         }
 
         public Dictionary<string, List<StoryScriptError>> GetErrors()
