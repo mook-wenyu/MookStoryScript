@@ -4,6 +4,21 @@ using System.Linq;
 namespace MookStoryScript
 {
     /// <summary>
+    /// 对话返回点结构体
+    /// </summary>
+    public struct ReturnPoint
+    {
+        public string NodeName { get; set; }
+        public int BlockIndex { get; set; }
+
+        public ReturnPoint(string nodeName, int blockIndex)
+        {
+            NodeName = nodeName;
+            BlockIndex = blockIndex;
+        }
+    }
+
+    /// <summary>
     /// 对话状态
     /// </summary>
     public class DialogueState

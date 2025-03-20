@@ -1,70 +1,61 @@
 using System;
-using System.Collections.Generic;
 using MookStoryScript;
 using UnityEngine;
+using Logger = MookStoryScript.Logger;
 
 public class UnityDialogueLoader : IDialogueLoader
 {
-    public Dictionary<string, DialogueNode> DialogueNodes { get; private set; }
+    private readonly string _rootDir;
+    private readonly string[] _fileExtensions = {".txt", ".mds"};
 
-    public StoryScriptParser StoryScriptParsers { get; private set; }
-
-    public UnityDialogueLoader() : this(string.Empty)
+    public UnityDialogueLoader() : this("Story")
     {
     }
 
     public UnityDialogueLoader(string rootDir)
     {
-        Console.WriteLine("Initializing DefaultDialogueLoader...");
-        StoryScriptParsers = new StoryScriptParser();
-        DialogueNodes = new Dictionary<string, DialogueNode>();
+        Console.WriteLine("Initializing UnityDialogueLoader...");
 
-        if (string.IsNullOrEmpty(rootDir))
-        {
-            rootDir = "Story";
-        }
+        _rootDir = rootDir;
+    }
 
+    /// <summary>
+    /// 加载脚本
+    /// </summary>
+    public void LoadScripts(Runner runner)
+    {
         // 加载所有对话脚本
-        var assets = Resources.LoadAll<TextAsset>(rootDir);
+        var assets = Resources.LoadAll<TextAsset>(_rootDir);
         foreach (var asset in assets)
         {
-            LoadDialogueScriptContent(asset.text, asset.name);
+            try
+            {
+                LoadDialogueScriptContent(asset.text, runner, asset.name);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"加载脚本文件 {asset.name} 时出错: {ex.Message}");
+            }
         }
     }
 
     /// <summary>
-    /// 加载对话脚本内容
+    /// 加载故事脚本内容
     /// </summary>
-    public void LoadDialogueScriptContent(string scriptContent, string sourceName = "Unknown source")
+    public void LoadDialogueScriptContent(string scriptContent, Runner runner, string sourceName = "Unknown source")
     {
         try
         {
-            var nodes = StoryScriptParsers.ParseScript(scriptContent, sourceName);
+            var nodes = runner.StoryScriptParsers.ParseScript(scriptContent, sourceName);
             foreach (var node in nodes)
             {
-                DialogueNodes[node.Key] = node.Value;
+                runner.DialogueNodes[node.Key] = node.Value;
             }
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"[{sourceName}] Failed to parse story script\n{ex.Message}");
+            Logger.LogError($"[{sourceName}] Failed to parse story script\n{ex.Message}");
         }
     }
 
-    /// <summary>
-    /// 注册对话数据
-    /// </summary>
-    public void RegisterDialogueNode(DialogueNode dialogueNode)
-    {
-        // 注册对话
-        DialogueNodes[dialogueNode.Name] = dialogueNode;
-    }
-
-    /// <summary>
-    /// 获取对话数据
-    /// </summary>
-    public DialogueNode GetDialogueNode(string nodeName)
-    {
-        return DialogueNodes.GetValueOrDefault(nodeName, null);
-    }
 }

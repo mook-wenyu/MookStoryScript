@@ -48,7 +48,7 @@ public void SaveGame(string saveName)
     var saveData = new SaveData
     {
         DialogueProgress = _dialogueManager.DialogueProgresses,
-        Variables = _dialogueManager.VariableManagers.SaveVariables()
+        Variables = _dialogueManager.VariableManagers.GetVariables()
     };
     
     string json = JsonUtility.ToJson(saveData);

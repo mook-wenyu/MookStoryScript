@@ -1,9 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using System.Text;
 using MookStoryScript;
 using UnityEngine;
 using UnityEngine.UI;
+using Logger = MookStoryScript.Logger;
 
 public class ListDialogueUI : MonoBehaviour
 {
@@ -34,10 +33,10 @@ public class ListDialogueUI : MonoBehaviour
         _clickHandler.onClick.AddListener(DialogueMgr.Instance.DialogueMgrs.ContinueSay);
         */
 
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueStarted += OnDialogueStarted;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueUpdated += OnDialogueUpdated;
-        DialogueMgr.Instance.DialogueMgrs.OnOptionSelected += OnOptionSelected;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueCompleted += OnDialogueCompleted;
+        DialogueMgr.Instance.Runners.OnDialogueStarted += OnDialogueStarted;
+        DialogueMgr.Instance.Runners.OnDialogueUpdated += OnDialogueUpdated;
+        DialogueMgr.Instance.Runners.OnOptionSelected += OnOptionSelected;
+        DialogueMgr.Instance.Runners.OnDialogueCompleted += OnDialogueCompleted;
         
         lDialogueBtn.onClick.AddListener(OnListClickDialogue);
         
@@ -84,7 +83,7 @@ public class ListDialogueUI : MonoBehaviour
             go.GetComponentInChildren<Text>().text = "继续";
             go.onClick.AddListener(() =>
             {
-                DialogueMgr.Instance.DialogueMgrs.ContinueSay();
+                DialogueMgr.Instance.Runners.ContinueSay();
             });
             return;
         }
@@ -94,7 +93,7 @@ public class ListDialogueUI : MonoBehaviour
             go.GetComponentInChildren<Text>().text = option.Text;
             go.onClick.AddListener(() =>
             {
-                DialogueMgr.Instance.DialogueMgrs.SelectOption(block.Options.IndexOf(option));
+                DialogueMgr.Instance.Runners.SelectOption(block.Options.IndexOf(option));
             });
         }
     }
@@ -121,14 +120,14 @@ public class ListDialogueUI : MonoBehaviour
             Destroy(dialogueContainer.content.GetChild(i).gameObject);
         }
         
-        DialogueMgr.Instance.DialogueMgrs.Say(inputField.text.Trim());
+        DialogueMgr.Instance.Runners.Say(inputField.text.Trim());
     }
 
     private void OnDestroy()
     {
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueStarted -= OnDialogueStarted;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueUpdated -= OnDialogueUpdated;
-        DialogueMgr.Instance.DialogueMgrs.OnOptionSelected -= OnOptionSelected;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueCompleted -= OnDialogueCompleted;
+        DialogueMgr.Instance.Runners.OnDialogueStarted -= OnDialogueStarted;
+        DialogueMgr.Instance.Runners.OnDialogueUpdated -= OnDialogueUpdated;
+        DialogueMgr.Instance.Runners.OnOptionSelected -= OnOptionSelected;
+        DialogueMgr.Instance.Runners.OnDialogueCompleted -= OnDialogueCompleted;
     }
 }

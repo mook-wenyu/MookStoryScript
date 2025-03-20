@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using StoryScript;
 
 namespace MookStoryScript
 {
@@ -22,23 +21,22 @@ namespace MookStoryScript
 
     public class FunctionManager
     {
-        private readonly Dictionary<string, Delegate> _functions;
-        private readonly ExpressionManager _expressionManager;
+        private readonly Dictionary<string, Delegate> _functions = new Dictionary<string, Delegate>();
         // 存储类型到其单例实例的映射
         private readonly Dictionary<Type, object> _singletonInstances = new Dictionary<Type, object>();
         // 存储已注册的对象
         private readonly Dictionary<string, object> _registeredObjects = new Dictionary<string, object>();
 
-        private static DialogueManager _dialogueManager = null!;
+        private readonly ExpressionManager _expressionManager;
+        private static Runner _runner = null!;
         private static LocalizationManager _localizationManager = null!;
 
-        public FunctionManager(ExpressionManager expressionManager, DialogueManager dialogueManager)
+        public FunctionManager(Runner runner)
         {
             Logger.Log("Initializing FunctionManager...");
-            _functions = new Dictionary<string, Delegate>();
-            _expressionManager = expressionManager;
-            _dialogueManager = dialogueManager;
-            _localizationManager = dialogueManager.LocalizationManagers;
+            _expressionManager = runner.ExpressionManagers;
+            _runner = runner;
+            _localizationManager = runner.LocalizationManagers;
 
             // 自动注册所有程序集中的函数
             RegisterAllFunctions();
@@ -288,11 +286,7 @@ namespace MookStoryScript
         public Delegate? GetFunc(string name)
         {
             name = name.ToLower();
-            if (_functions.TryGetValue(name, out var function))
-            {
-                return function;
-            }
-            return null;
+            return _functions!.GetValueOrDefault(name, null);
         }
 
         /// <summary>
@@ -364,13 +358,13 @@ namespace MookStoryScript
                 return 0;
             }
 
-            if (!_dialogueManager.DialogueLoaders.DialogueNodes.ContainsKey(nodeName))
+            if (!_runner.DialogueNodes.ContainsKey(nodeName))
             {
                 Logger.LogError($"Node not found: {nodeName}");
                 return 0;
             }
 
-            return _dialogueManager.DialogueProgresses.GetAllSectionsNodeVisitCount(nodeName);
+            return _runner.DialogueProgresses.GetAllSectionsNodeVisitCount(nodeName);
         }
 
         /// <summary>

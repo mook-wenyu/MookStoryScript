@@ -1,7 +1,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace StoryScript
+namespace MookStoryScript
 {
     public interface ILogger
     {

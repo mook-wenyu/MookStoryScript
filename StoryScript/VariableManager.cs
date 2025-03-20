@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using System.Reflection;
-using Newtonsoft.Json;
-using StoryScript;
 
 namespace MookStoryScript
 {
@@ -34,17 +30,15 @@ namespace MookStoryScript
         // 存储已注册的对象
         private readonly Dictionary<string, object> _registeredObjects = new Dictionary<string, object>();
 
-        public int TestMoney { get; set; } = 1;
-
         /// <summary>
         /// 初始化变量系统
         /// </summary>
-        public VariableManager(ExpressionManager expressionManager)
+        public VariableManager(Runner runner)
         {
             Logger.Log("Initializing VariableManager...");
             _builtinVariables = new Dictionary<string, (Func<object> getter, Action<object> setter)>();
             _variables = new Dictionary<string, object>();
-            _expressionManager = expressionManager;
+            _expressionManager = runner.ExpressionManagers;
 
             // 自动注册所有程序集中的变量
             RegisterAllVariables();

@@ -1,9 +1,7 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using MookStoryScript;
 using UnityEngine;
 using UnityEngine.UI;
+using Logger = MookStoryScript.Logger;
 
 public class NormalDialogueUI : MonoBehaviour
 {
@@ -29,12 +27,12 @@ public class NormalDialogueUI : MonoBehaviour
         {
             _clickHandler = dialogueUI.AddComponent<Button>();
         }
-        _clickHandler.onClick.AddListener(DialogueMgr.Instance.DialogueMgrs.ContinueSay);
+        _clickHandler.onClick.AddListener(DialogueMgr.Instance.Runners.ContinueSay);
 
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueStarted += OnDialogueStarted;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueUpdated += OnDialogueUpdated;
-        DialogueMgr.Instance.DialogueMgrs.OnOptionSelected += OnOptionSelected;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueCompleted += OnDialogueCompleted;
+        DialogueMgr.Instance.Runners.OnDialogueStarted += OnDialogueStarted;
+        DialogueMgr.Instance.Runners.OnDialogueUpdated += OnDialogueUpdated;
+        DialogueMgr.Instance.Runners.OnOptionSelected += OnOptionSelected;
+        DialogueMgr.Instance.Runners.OnDialogueCompleted += OnDialogueCompleted;
         
         nDialogueBtn.onClick.AddListener(OnNormalClickDialogue);
         
@@ -67,7 +65,7 @@ public class NormalDialogueUI : MonoBehaviour
             go.GetComponentInChildren<Text>().text = option.Text;
             go.onClick.AddListener(() =>
             {
-                DialogueMgr.Instance.DialogueMgrs.SelectOption(block.Options.IndexOf(option));
+                DialogueMgr.Instance.Runners.SelectOption(block.Options.IndexOf(option));
             });
         }
     }
@@ -88,14 +86,14 @@ public class NormalDialogueUI : MonoBehaviour
     {
         btnRoot.SetActive(false);
         dialogueUI.SetActive(true);
-        DialogueMgr.Instance.DialogueMgrs.Say(inputField.text.Trim());
+        DialogueMgr.Instance.Runners.Say(inputField.text.Trim());
     }
 
     private void OnDestroy()
     {
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueStarted -= OnDialogueStarted;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueUpdated -= OnDialogueUpdated;
-        DialogueMgr.Instance.DialogueMgrs.OnOptionSelected -= OnOptionSelected;
-        DialogueMgr.Instance.DialogueMgrs.OnDialogueCompleted -= OnDialogueCompleted;
+        DialogueMgr.Instance.Runners.OnDialogueStarted -= OnDialogueStarted;
+        DialogueMgr.Instance.Runners.OnDialogueUpdated -= OnDialogueUpdated;
+        DialogueMgr.Instance.Runners.OnOptionSelected -= OnOptionSelected;
+        DialogueMgr.Instance.Runners.OnDialogueCompleted -= OnDialogueCompleted;
     }
 }

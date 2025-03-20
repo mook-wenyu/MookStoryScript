@@ -2,86 +2,95 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using StoryScript;
 
 namespace MookStoryScript
 {
     public interface IDialogueLoader
     {
-        public Dictionary<string, DialogueNode> DialogueNodes { get; }
-        public void LoadDialogueScriptContent(string scriptContent, string sourceName = "Unknown source");
-        public void RegisterDialogueNode(DialogueNode dialogueNode);
-        public DialogueNode? GetDialogueNode(string nodeName);
+        /// <summary>
+        /// 加载脚本
+        /// </summary>
+        /// <param name="runner">运行器</param>
+        /// <returns>异步任务</returns>
+        public void LoadScripts(Runner runner);
+
+        /// <summary>
+        /// 加载故事脚本内容
+        /// </summary>
+        public void LoadDialogueScriptContent(string scriptContent, Runner runner, string sourceName = "Unknown source");
     }
 
     public class DefaultDialogueLoader : IDialogueLoader
     {
-        public Dictionary<string, DialogueNode> DialogueNodes { get; private set; }
+        private readonly string _rootDir;
+        private readonly string[] _fileExtensions = { ".txt", ".mds" };
 
-        public StoryScriptParser StoryScriptParsers { get; private set; }
-
-        public DefaultDialogueLoader() : this(string.Empty)
+        public DefaultDialogueLoader() : this("DialogueScripts")
         {
         }
 
         public DefaultDialogueLoader(string rootDir)
         {
             Logger.Log("Initializing DefaultDialogueLoader...");
-            StoryScriptParsers = new StoryScriptParser();
-            DialogueNodes = new Dictionary<string, DialogueNode>();
 
-            if (string.IsNullOrEmpty(rootDir))
+            _rootDir = rootDir;
+
+            if (!Directory.Exists(_rootDir))
             {
-                rootDir = "Story";
+                Directory.CreateDirectory(_rootDir);
             }
+        }
 
-            // 加载所有对话脚本
-            var files = Utils.GetFiles(rootDir, new[] {".txt", ".mds"});
-            foreach (string file in files)
+        /// <summary>
+        /// 加载脚本
+        /// </summary>
+        /// <param name="runner">运行器</param>
+        public void LoadScripts(Runner runner)
+        {
+            // 获取所有符合条件的文件
+            var files = Directory.GetFiles(_rootDir, "*.*", SearchOption.AllDirectories)
+                .Where(f => _fileExtensions.Contains(Path.GetExtension(f).ToLower()))
+                .ToList();
+
+            // 加载所有文件
+            foreach (var file in files)
             {
-                if (string.IsNullOrEmpty(file)) continue;
-                string ds = Utils.ReadFile(file);
+                try
+                {
+                    if (string.IsNullOrEmpty(file)) continue;
+                    string ds = Utils.ReadFile(file);
 
-                if (string.IsNullOrEmpty(ds)) continue;
-                string fileName = Path.GetFileName(file);
-                LoadDialogueScriptContent(ds, fileName);
+                    if (string.IsNullOrEmpty(ds)) continue;
+                    string fileName = Path.GetFileName(file);
+                    LoadDialogueScriptContent(ds, runner, fileName);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"加载脚本文件 {file} 时出错: {ex.Message}");
+                }
             }
         }
 
         /// <summary>
         /// 加载故事脚本内容
         /// </summary>
-        public void LoadDialogueScriptContent(string scriptContent, string sourceName = "Unknown source")
+        /// <param name="scriptContent">故事脚本内容</param>
+        /// <param name="runner">运行器</param>
+        /// <param name="sourceName">源名称</param>
+        public void LoadDialogueScriptContent(string scriptContent, Runner runner, string sourceName = "Unknown source")
         {
             try
             {
-                var nodes = StoryScriptParsers.ParseScript(scriptContent, sourceName);
+                var nodes = runner.StoryScriptParsers.ParseScript(scriptContent, sourceName);
                 foreach (var node in nodes)
                 {
-                    DialogueNodes[node.Key] = node.Value;
+                    runner.DialogueNodes[node.Key] = node.Value;
                 }
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[{sourceName}] Failed to parse story script\n{ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// 注册对话数据
-        /// </summary>
-        public void RegisterDialogueNode(DialogueNode dialogueNode)
-        {
-            // 注册对话
-            DialogueNodes[dialogueNode.Name] = dialogueNode;
-        }
-
-        /// <summary>
-        /// 获取对话数据
-        /// </summary>
-        public DialogueNode? GetDialogueNode(string nodeName)
-        {
-            return DialogueNodes!.GetValueOrDefault(nodeName, null);
         }
 
     }

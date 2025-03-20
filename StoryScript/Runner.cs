@@ -1,35 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using StoryScript;
 
 namespace MookStoryScript
 {
-    /// <summary>
-    /// 对话返回点结构体
-    /// </summary>
-    public struct ReturnPoint
-    {
-        public string NodeName { get; set; }
-        public int BlockIndex { get; set; }
-
-        public ReturnPoint(string nodeName, int blockIndex)
-        {
-            NodeName = nodeName;
-            BlockIndex = blockIndex;
-        }
-    }
-
-    public class DialogueManager
+    public class Runner
     {
         public ExpressionManager ExpressionManagers { get; private set; }
         public VariableManager VariableManagers { get; private set; }
+        public LocalizationManager LocalizationManagers { get; private set; }
         public FunctionManager FunctionManagers { get; private set; }
         public StoryScriptParser StoryScriptParsers { get; private set; }
-        public LocalizationManager LocalizationManagers { get; private set; }
-
+        
         /// <summary>
         /// 对话加载器
         /// </summary>
@@ -61,27 +44,28 @@ namespace MookStoryScript
         // 本地化事件
         public event Action<string>? OnLanguageChanged;
 
+        public Dictionary<string, DialogueNode> DialogueNodes { get; private set; } = new();
 
-        public DialogueManager() : this(new DefaultDialogueLoader())
+        public Runner() : this(new DefaultDialogueLoader())
         {
         }
 
-        public DialogueManager(string rootDir) : this(new DefaultDialogueLoader(rootDir))
+        public Runner(string rootDir) : this(new DefaultDialogueLoader(rootDir))
         {
         }
 
-        public DialogueManager(IDialogueLoader dialogueLoader)
+        public Runner(IDialogueLoader dialogueLoader)
         {
-            Logger.Log("Initializing DialogueManager...");
-            DialogueLoaders = dialogueLoader;
+            Logger.Log("Initializing Runner...");
             ExpressionManagers = new ExpressionManager();
-            VariableManagers = new VariableManager(ExpressionManagers);
+            VariableManagers = new VariableManager(this);
             LocalizationManagers = new LocalizationManager();
-            FunctionManagers = new FunctionManager(ExpressionManagers, this);
-
+            FunctionManagers = new FunctionManager(this);
             StoryScriptParsers = new StoryScriptParser();
-
             DialogueProgresses = new DialogueProgress();
+
+            DialogueLoaders = dialogueLoader;
+            DialogueLoaders.LoadScripts(this);
         }
 
         /// <summary>
@@ -90,7 +74,7 @@ namespace MookStoryScript
         public void RegisterDialogueNode(DialogueNode dialogueNode)
         {
             // 注册对话
-            DialogueLoaders.RegisterDialogueNode(dialogueNode);
+            DialogueNodes[dialogueNode.Name] = dialogueNode;
         }
 
         /// <summary>
@@ -98,7 +82,7 @@ namespace MookStoryScript
         /// </summary>
         public DialogueNode? GetDialogueNode(string nodeName)
         {
-            return DialogueLoaders.GetDialogueNode(nodeName);
+            return DialogueNodes!.GetValueOrDefault(nodeName, null);
         }
 
         /// <summary>
@@ -257,7 +241,7 @@ namespace MookStoryScript
                     return;
                 }
 
-                targetNode = DialogueLoaders.GetDialogueNode(nodeName);
+                targetNode = GetDialogueNode(nodeName);
                 if (targetNode == null)
                 {
                     Logger.Log($"Dialogue node not found: {nodeName}");
@@ -370,7 +354,7 @@ namespace MookStoryScript
                 return;
             }
 
-            var nextNode = DialogueLoaders.GetDialogueNode(nextNodeName);
+            var nextNode = GetDialogueNode(nextNodeName);
             if (nextNode != null)
             {
                 // 如果是内部节点，保存当前位置到返回栈
@@ -510,7 +494,7 @@ namespace MookStoryScript
             }
 
             string returnNodeName = CurrentNode.ReturnNode;
-            var returnNode = DialogueLoaders.GetDialogueNode(returnNodeName);
+            var returnNode = GetDialogueNode(returnNodeName);
             if (returnNode != null)
             {
                 CurrentNodeName = returnNodeName;
@@ -644,8 +628,8 @@ namespace MookStoryScript
             // 检查当前块是否指定了下一个节点
             if (!string.IsNullOrEmpty(CurrentBlock.NextNodeName))
             {
-                var nextNode = DialogueLoaders.GetDialogueNode(CurrentBlock.NextNodeName);
-                if (nextNode is {Blocks: {Count: > 0}})
+                var nextNode = GetDialogueNode(CurrentBlock.NextNodeName);
+                if (nextNode is { Blocks: { Count: > 0 } })
                 {
                     // 检查下一个节点的第一个块是否有符合条件的
                     var firstBlock = nextNode.Blocks[0];
@@ -677,7 +661,7 @@ namespace MookStoryScript
                 {
                     // 获取栈顶元素但不移除
                     var returnPoint = DialogueProgresses.PeekReturnPoint();
-                    var returnNode = DialogueLoaders.GetDialogueNode(returnPoint.NodeName);
+                    var returnNode = GetDialogueNode(returnPoint.NodeName);
 
                     // 检查直接返回的节点是否有可执行块
                     if (returnNode != null && returnPoint.BlockIndex < returnNode.Blocks.Count)
@@ -702,7 +686,7 @@ namespace MookStoryScript
                     }
 
                     // 如果直接返回的节点没有可执行块，且它也是内部节点，则需要检查整个返回栈
-                    if (returnNode is {IsInternal: true})
+                    if (returnNode is { IsInternal: true })
                     {
                         // 复制返回栈以便遍历
                         var stackCopy = DialogueProgresses.GetReturnPointStack();
@@ -714,7 +698,7 @@ namespace MookStoryScript
                         while (stackCopy.Count > 0)
                         {
                             var nextReturnPoint = stackCopy.Pop();
-                            var nextReturnNode = DialogueLoaders.GetDialogueNode(nextReturnPoint.NodeName);
+                            var nextReturnNode = GetDialogueNode(nextReturnPoint.NodeName);
 
                             if (nextReturnNode != null && nextReturnPoint.BlockIndex < nextReturnNode.Blocks.Count)
                             {
@@ -800,54 +784,54 @@ namespace MookStoryScript
                 switch (command.CommandType)
                 {
                     case CommandType.Var:
-                    {
-                        // 解析变量声明
-                        var varMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
-                        if (!varMatch.Success)
                         {
-                            Logger.Log($"Invalid variable declaration: {command.CsExpression}");
-                            return;
-                        }
+                            // 解析变量声明
+                            var varMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
+                            if (!varMatch.Success)
+                            {
+                                Logger.Log($"Invalid variable declaration: {command.CsExpression}");
+                                return;
+                            }
 
-                        string varName = varMatch.Groups[1].Value;
-                        string varValue = varMatch.Groups[2].Value;
+                            string varName = varMatch.Groups[1].Value;
+                            string varValue = varMatch.Groups[2].Value;
 
-                        // 检查变量是否已存在
-                        if (VariableManagers.Get<object>(varName) != null)
-                        {
-                            return;
-                        }
+                            // 检查变量是否已存在
+                            if (VariableManagers.Get<object>(varName) != null)
+                            {
+                                return;
+                            }
 
-                        // 计算初始值并声明变量
-                        var value = ExpressionManagers.Evaluate(varValue);
-                        if (value != null) VariableManagers.Set(varName, value);
-                        // 触发事件
-                        OnCommandExecuted?.Invoke(command.CommandType);
-                        break;
-                    }
-                    case CommandType.Set:
-                    {
-                        // 解析赋值语句
-                        var setMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
-                        if (!setMatch.Success)
-                        {
-                            Logger.Log($"Invalid assignment statement: {command.CsExpression}");
-                            return;
-                        }
-
-                        string varName = setMatch.Groups[1].Value;
-                        string setExpression = setMatch.Groups[2].Value;
-
-                        // 计算表达式并设置变量值
-                        object? value = ExpressionManagers.Evaluate(setExpression);
-                        if (value != null)
-                        {
-                            VariableManagers.Set(varName, value);
+                            // 计算初始值并声明变量
+                            var value = ExpressionManagers.Evaluate(varValue);
+                            if (value != null) VariableManagers.Set(varName, value);
                             // 触发事件
                             OnCommandExecuted?.Invoke(command.CommandType);
+                            break;
                         }
-                        break;
-                    }
+                    case CommandType.Set:
+                        {
+                            // 解析赋值语句
+                            var setMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
+                            if (!setMatch.Success)
+                            {
+                                Logger.Log($"Invalid assignment statement: {command.CsExpression}");
+                                return;
+                            }
+
+                            string varName = setMatch.Groups[1].Value;
+                            string setExpression = setMatch.Groups[2].Value;
+
+                            // 计算表达式并设置变量值
+                            object? value = ExpressionManagers.Evaluate(setExpression);
+                            if (value != null)
+                            {
+                                VariableManagers.Set(varName, value);
+                                // 触发事件
+                                OnCommandExecuted?.Invoke(command.CommandType);
+                            }
+                            break;
+                        }
                     case CommandType.Add:
                     case CommandType.Sub:
                         var opMatch = ScriptPatterns.AssignmentPattern.Match(command.CsExpression);
@@ -976,7 +960,7 @@ namespace MookStoryScript
         /// <param name="language">目标语言</param>
         public void CollectLocalizationTextsFromLoadedNodes(string language)
         {
-            LocalizationManagers.CollectLocalizationTextsFromNodes(DialogueLoaders.DialogueNodes, language);
+            LocalizationManagers.CollectLocalizationTextsFromNodes(DialogueNodes, language);
         }
 
     }
