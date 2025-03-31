@@ -110,11 +110,12 @@ namespace MookStoryScript
         /// </summary>
         private object GetOrCreateSingleton(Type type)
         {
-            if (!_singletonInstances.TryGetValue(type, out var instance))
+            if (!_singletonInstances.TryGetValue(type, out object? instance))
             {
                 instance = Activator.CreateInstance(type);
                 if (instance == null)
                 {
+                    Logger.LogError($"Failed to create an instance of type {type.FullName}");
                     throw new InvalidOperationException($"Failed to create an instance of type {type.FullName}");
                 }
                 _singletonInstances[type] = instance;

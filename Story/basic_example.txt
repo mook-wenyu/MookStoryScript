@@ -8,20 +8,23 @@
 // 4. 命令：包括 var, set, add, sub, call, wait 等
 // 5. 条件：if, elif, else, endif 结构
 // 6. 跳转：使用 => 指向其他节点
+// 7. 缩进：使用4个空格作为一个缩进级别，缩进必须一致（大多数编辑器的Tab键会自动转换为4个空格）
 
 // 开始节点
 :: start
 
-// 普通对话（无说话者）
-欢迎来到 StoryScript 示例！这是一个简单的对话系统演示。
+// 命令在节点开始位置，将属于该节点（在进入节点时立即触发一次）
 // ===== 变量操作 =====
 // 变量初始化：var 变量名 初始值
-var playerName "玩家"
-var friendshipLevel 0
-var hasMetBefore false
-var playerHealth 100
-var playerGold 50
-var hasSpecialItem false
+var player_name "玩家"
+var friendship_level 0
+var has_met_before false
+var player_health 100
+var player_gold 50
+var has_special_item false
+
+// 普通对话（无说话者）
+欢迎来到 StoryScript 示例！这是一个简单的对话系统演示。
 
 // 带说话者的对话
 引导者: 你好，旅行者！我是这个世界的引导者。
@@ -30,23 +33,73 @@ var hasSpecialItem false
 引导者[微笑]: 很高兴认识你！请问你叫什么名字？
 // ===== 函数调用 =====
 // 使用 call 命令调用外部注册的函数
-call log("旅行者")
+// 这个命令会附加到上面的对话块中（无空行分隔），在显示该对话时触发
+call log("用户遇到了引导者")
 
 // 变量插值：使用 {变量名} 在文本中插入变量值
-引导者: 原来你叫{playerName}啊，真是个好名字！
+引导者: 原来你叫{player_name}啊，真是个好名字！
+
+// 这个set命令会创建新的对话块，因为有空行分隔，将在单独的步骤中触发
+set player_name "勇者"
+
+// ===== 紧跟对话的选项示例 =====
+引导者: 你想知道什么呢？
+// 这些选项直接属于上面的对话块（无空行分隔），在显示该对话时一同显示选项
+-> 关于这个世界
+    引导者: 这是个神奇的世界。
+-> 关于我自己
+    引导者: 你是被选中的人。
+
+// ===== 空行分隔的选项示例 =====
+引导者: 还有其他问题吗？
+
+// 这些选项会创建新的对话块（有空行分隔），将作为单独的步骤显示
+-> 我很好奇
+    引导者: 好奇心是探索的动力！
+-> 没有了
+    引导者: 好的，我们继续。
 
 // ===== 条件判断 =====
 // 使用 if/else/endif 进行条件判断
-if hasMetBefore
+if has_met_before
     引导者[惊讶]: 咦？我们之前见过面吗？
     // 嵌套条件示例
-    if friendshipLevel > 10
+    if friendship_level > 10
         引导者[高兴]: 而且看起来我们关系不错！
     endif
 else
     引导者: 这是我们第一次见面呢。
-    // 使用 set 命令设置变量值
-    set hasMetBefore true
+    // 使用 set 命令设置变量值（无空行，属于当前对话块）
+    // 这个命令会在显示该对话时触发，而不是单独的步骤
+    set has_met_before true
+endif
+
+// ===== 紧跟对话的跳转示例 =====
+引导者: 让我带你去看看别的地方吧！
+// 这个跳转会附加到上面的对话块中（无空行分隔），在显示对话后立即执行跳转
+=> jump_demo 
+
+// ===== 跳转演示节点 =====
+:: jump_demo
+// 缩进是严格的，必须使用4个空格或其倍数
+引导者: 这里是关于跳转的演示。
+
+// 错误示例：跳转后不能出现对话（这会导致解析错误）
+=> bad_jump_demo
+引导者: 这行不会被执行，因为它在跳转之后！
+
+// ===== 缩进示例节点 =====
+:: indent_demo
+引导者: 缩进在StoryScript中非常重要。
+
+if player_health > 50
+    // 正确的缩进（4个空格）
+    引导者: 你的健康状况不错！
+    // 这个命令属于if块内（正确缩进），只在条件满足时触发
+    add player_health 10
+else
+// 错误的缩进（没有缩进）- 这可能导致解析错误
+引导者: 你需要休息！
 endif
 
 // ===== 选项菜单 =====
@@ -54,19 +107,19 @@ endif
 -> 我想了解这个世界
     引导者: 这是一个充满故事的世界，由文字构建而成。
     // 使用 add 命令增加变量值
-    add friendshipLevel 10
+    add friendship_level 10
     // 使用 => 跳转到其他节点
-    => AboutWorld
--> 我想知道如何使用StoryScript [if friendshipLevel >= 0]
+    => about_world
+-> 我想知道如何使用StoryScript [if friendship_level >= 0]
     引导者[认真]: StoryScript是一种简单而强大的对话脚本语言。
-    => AboutStoryScript
+    => about_story_script
 -> 我想直接开始冒险
     引导者: 好的，那我们直接开始吧！
-    => Adventure
--> 我想查看我的状态 [if playerHealth > 0]
+    => adventure
+-> 我想查看我的状态 [if player_health > 0]
     引导者: 让我看看你的状态...
-    引导者: 你当前的生命值是{playerHealth}，金币数量是{playerGold}。
-    if hasSpecialItem
+    引导者: 你当前的生命值是{player_health}，金币数量是{player_gold}。
+    if has_special_item
         引导者: 你还拥有一件特殊物品！
     else
         引导者: 你目前没有特殊物品。
@@ -75,7 +128,7 @@ endif
     => start
 
 // ===== 关于世界的节点 =====
-:: AboutWorld
+:: about_world
 引导者: 在这个世界中，每个角色都有自己的故事。
 
 引导者[思考]: 通过对话和选择，你可以探索不同的故事线。
@@ -86,42 +139,46 @@ endif
     引导者: 每一个选择都可能导向不同的结局。
     -> 那我的选择真的很重要了
         引导者[点头]: 没错，你的每一个决定都会影响故事的走向。
-        add friendshipLevel 5
-        => AboutWorld_Choices
+        add friendship_level 5
+        => about_world_choices
     -> 听起来很有趣
         引导者: 确实如此！探索的乐趣就在于此。
-        => AboutWorld_Choices
+        => about_world_choices
 -> 这个世界有多大？
     引导者: 这个世界的大小取决于创作者的想象力。
     引导者[微笑]: 理论上可以无限扩展！
-    => AboutWorld_Choices
+    => about_world_choices
 -> 我想回到主菜单
     引导者: 好的，让我们回到开始的地方。
     => start
 
 // ===== 关于选择的节点 =====
-:: AboutWorld_Choices
+:: about_world_choices
 引导者: 在StoryScript中，选择可以有条件限制，也可以触发特定事件。
 // ===== 复杂表达式 =====
 // 可以使用复杂表达式进行变量操作
-set friendshipLevel = friendshipLevel + 5
+set friendship_level = friendship_level + 5
 // 使用 call 命令调用外部函数并传递参数
-call log("引导者好感度: " + friendshipLevel)
+call log("引导者好感度: " + friendship_level)
 
 // 变量插值示例
-引导者[微笑]: 比如现在，因为我们的交流，我对你的好感度提高了！现在是{friendshipLevel}点。
+引导者[微笑]: 比如现在，因为我们的交流，我对你的好感度提高了！现在是{friendship_level}点。
 // ===== 等待命令 =====
 // 使用 wait 命令暂停对话流程，单位为秒，可以精确到毫秒
 wait 5
 
 引导者: 让我们继续了解更多关于StoryScript的知识吧！
 -> 继续了解
-    => AboutStoryScript
+    => about_story_script
 -> 我想开始冒险了
-    => Adventure
+    => adventure
+
+:: bad_jump_demo
+引导者: 正确的跳转演示。
+=> start
 
 // ===== 关于StoryScript的节点 =====
-:: AboutStoryScript
+:: about_story_script
 引导者: StoryScript有几个核心概念：节点、对话、选项和命令。
 
 引导者[教学]: 节点是故事的基本单位，以"::"开头定义。
@@ -129,10 +186,10 @@ wait 5
 引导者: 选项以"->"开头，可以有条件限制，格式是"-> 选项文本 [if 条件]"。
 // ===== 跳转示例 =====
 // 使用 => 直接跳转到其他节点
-=> StoryScriptCommands
+=> story_script_commands
 
 // ===== StoryScript命令节点 =====
-:: StoryScriptCommands
+:: story_script_commands
 引导者: StoryScript支持多种命令：
 
 引导者: var命令用于声明变量，例如：var score 0
@@ -143,56 +200,56 @@ wait 5
 
 // ===== 条件嵌套示例 =====
 // 条件可以嵌套，支持复杂的逻辑结构
-if friendshipLevel > 10
+if friendship_level > 10
     引导者[高兴]: 看起来你对StoryScript很感兴趣！
     
-    if hasMetBefore
+    if has_met_before
         引导者: 而且我们已经是老朋友了！
     else
         引导者: 希望我们能成为好朋友！
     endif
-elif friendshipLevel > 5
+elif friendship_level > 5
     引导者: 你对StoryScript有一定了解了。
 else
     引导者: 希望这些基础知识对你有帮助。
 endif
 
-add playerGold 20
-set hasSpecialItem true
+add player_gold 20
+set has_special_item true
 
 引导者: 作为学习的奖励，我给了你20金币和一件特殊物品！
 // ===== 变量操作示例 =====
 // 给玩家一些奖励
 -> 我学会了，开始冒险吧！
     引导者[鼓励]: 太好了！祝你好运！
-    => Adventure
+    => adventure
 -> 我还有疑问
     引导者: 没关系，你可以随时回来问我。
     => start
 
 // ===== 冒险节点 =====
-:: Adventure
+:: adventure
 // 环境描述（无说话者的对话）
 你站在一条分叉路口，面前有三条路可以选择。
 
 引导者: 现在是时候开始你的冒险了！请选择一条路：
--> 向左走 - 通往森林 [if playerHealth > 50]
+-> 向左走 - 通往森林 [if player_health > 50]
     你选择了通往森林的道路。
-    => Forest
--> 向右走 - 通往山洞 [if hasSpecialItem]
+    => forest
+-> 向右走 - 通往山洞 [if has_special_item]
     你选择了通往山洞的道路。
-    => Cave
+    => cave
 -> 向前走 - 通往村庄
     你选择了通往村庄的道路。
-    => Village
+    => village
 -> 我需要休息一下
     引导者: 好的，休息一下再出发吧。
-    add playerHealth 20
-    引导者: 你恢复了一些生命值，现在是{playerHealth}点。
-    => Adventure
+    add player_health 20
+    引导者: 你恢复了一些生命值，现在是{player_health}点。
+    => adventure
 
 // ===== 森林节点 =====
-:: Forest
+:: forest
 你进入了一片茂密的森林，阳光透过树叶洒落在地面上。
 
 森林向导[友好]: 欢迎来到森林！这里有许多秘密等待你发现。
@@ -202,11 +259,11 @@ set random_event dice(3) // dice是一个内置函数会设置一个1-3的随机
 
 if random_event == 1
     森林向导: 看，那边有一棵结满果实的树！
-    add playerHealth 10
+    add player_health 10
     森林向导: 你吃了一些果实，恢复了10点生命值。
 elif random_event == 2
     森林向导[警惕]: 小心，有野兽出没！
-    sub playerHealth 15
+    sub player_health 15
     森林向导: 你被野兽袭击，失去了15点生命值。
 else
     森林向导: 这片森林今天很平静。
@@ -214,70 +271,70 @@ endif
 
 森林向导: 继续前进吧，冒险者！
 // 跳转命令
-=> Ending
+=> ending
 
 // ===== 山洞节点 =====
-:: Cave
+:: cave
 你走进了一个黑暗的山洞，只能依稀看到前方的路。
 
 洞穴探险家: 小心脚下，这里的路很滑。
 // ===== 物品检查示例 =====
-if hasSpecialItem
+if has_special_item
     洞穴探险家[惊讶]: 哇！你有一件特殊物品！这在山洞里会很有用。
     洞穴探险家: 让我看看...这是一个照明石！
     洞穴探险家: 有了它，我们可以看清山洞深处。
-    => CaveDeep
+    => cave_deep
 else
     洞穴探险家: 没有照明工具，我们无法深入山洞。
-    => Ending
+    => ending
 endif
 
 // ===== 山洞深处节点 =====
-:: CaveDeep
+:: cave_deep
 洞穴深处闪烁着奇异的光芒，墙壁上镶嵌着各种晶体。
 
 洞穴探险家[兴奋]: 看啊！这里有宝藏！
-add playerGold 100
+add player_gold 100
 洞穴探险家: 你获得了100金币！
 // 跳转命令
-=> Ending
+=> ending
 
 // ===== 村庄节点 =====
-:: Village
+:: village
 你来到了一个宁静的村庄，村民们正在忙碌地工作。
 
 村长[热情]: 欢迎来到我们的村庄，旅行者！
 
 // ===== 交易系统示例 =====
-村长: 我们这里有一些物品可以交易。你有{playerGold}金币。
--> 购买治疗药水（30金币）[if playerGold >= 30]
+村长: 我们这里有一些物品可以交易。你有{player_gold}金币。
+-> 购买治疗药水（30金币）[if player_gold >= 30]
     村长: 这是我们最好的治疗药水！
-    sub playerGold 30
-    add playerHealth 50
-    村长: 你的生命值恢复了50点，现在是{playerHealth}点。
--> 购买神秘道具（50金币）[if playerGold >= 50]
+    sub player_gold 30
+    add player_health 50
+    村长: 你的生命值恢复了50点，现在是{player_health}点。
+-> 购买神秘道具（50金币）[if player_gold >= 50]
     村长[神秘]: 这是一件非常特殊的物品...
-    sub playerGold 50
-    set hasSpecialItem true
+    sub player_gold 50
+    set has_special_item true
     村长: 你获得了一件特殊物品！
 -> 不需要购买任何东西
     村长: 如果你改变主意，随时欢迎回来！
 
 // 跳转命令
-=> Ending
+=> ending
 
 // ===== 结局节点 =====
-:: Ending
+:: ending
 引导者[微笑]: 恭喜你完成了这个StoryScript示例！
 
 // ===== 状态总结 =====
 引导者: 让我们看看你的最终状态：
-引导者: 生命值：{playerHealth}
-引导者: 金币：{playerGold}
-if hasSpecialItem
+引导者: 生命值：{player_health}
+引导者: 金币：{player_gold}
+if has_special_item
     引导者: 你拥有特殊物品！
 endif
-引导者: 我对你的好感度：{friendshipLevel}
+引导者: 我对你的好感度：{friendship_level}
 
 引导者: 这只是StoryScript功能的一小部分展示，它还有更多强大的特性等待你探索。
 // ===== 返回选项 =====
