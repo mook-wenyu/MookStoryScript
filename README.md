@@ -40,7 +40,7 @@ git clone https://github.com/mook-wenyu/MookStoryScript.git
    - 方法二：将编译后的 DLL 添加到 Unity 项目的 Plugins 文件夹
 2. 创建一个 DialogueManager 的包装类
 
-请查看代码文件：[`DialogueMgr.cs`](UnityProjectExample/Assets/Scripts/DialogueMgr.cs)
+请查看代码文件：[`DialogueMgr.cs`](UnityProjectExample/Assets/Scripts/Dialogue/DialogueMgr.cs)
 
 ### 保存和加载进度
 
@@ -89,7 +89,7 @@ MookStoryScript 使用加载器自动加载脚本文件。默认情况下，Dial
 
 您可以通过实现 `IDialogueLoader` 接口创建自定义加载器，以支持从数据库、网络或其他来源加载脚本。
 
-请查看代码文件：[`UnityDialogueLoader.cs`](UnityProjectExample/Assets/Scripts/UnityDialogueLoader.cs)
+请查看代码文件：[`UnityDialogueLoader.cs`](UnityProjectExample/Assets/Scripts/Dialogue/UnityDialogueLoader.cs)
 
 ## 脚本语法
 
