@@ -22,6 +22,7 @@ var has_met_before false
 var player_health 100
 var player_gold 50
 var has_special_item false
+var has_map true      // 玩家初始有地图
 
 // 普通对话（无说话者）
 欢迎来到 StoryScript 示例！这是一个简单的对话系统演示。
@@ -125,7 +126,6 @@ endif
         引导者: 你目前没有特殊物品。
     endif
     // 继续当前对话，不跳转
-    => start
 
 // ===== 关于世界的节点 =====
 :: about_world
@@ -254,8 +254,9 @@ set has_special_item true
 
 森林向导[友好]: 欢迎来到森林！这里有许多秘密等待你发现。
 // ===== 随机事件示例 =====
-// 使用call命令调用随机数函数
-set random_event dice(3) // dice是一个内置函数会设置一个1-3的随机数到变量 random_event
+// dice是一个内置函数，生成1到N之间的随机整数，这里会生成1-3之间的随机数
+// 直接在set表达式中调用函数
+set random_event dice(3) // 设置一个1-3的随机数到变量 random_event
 
 if random_event == 1
     森林向导: 看，那边有一棵结满果实的树！
